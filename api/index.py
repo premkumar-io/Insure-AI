@@ -2,32 +2,34 @@ import sys
 import os
 import logging
 
-# Setup logger for Vercel Serverless Function
 logger = logging.getLogger("insure_ai.vercel")
 
-# Ensure root directory is at the top of sys.path for Vercel
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 try:
     from app import app
-    logger.info("Successfully imported FastAPI app for Vercel Serverless deployment.")
 except Exception as ex:
-    logger.error(f"Critical error importing app in api/index.py: {ex}", exc_info=True)
     from fastapi import FastAPI
-    app = FastAPI(title="Insure AI - Vercel Serverless Initialization Error")
-
-    @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"])
+    app = FastAPI(title="Insure AI Error Handler")
+    @app.api_route("/{path:path}", methods=["GET", "POST"])
     def error_fallback(path: str):
-        return {
-            "status": "error",
-            "message": "Vercel Serverless Function Initialization Failed",
-            "detail": str(ex),
-            "python_path": sys.path,
-            "root_dir": root_dir
-        }
+        return {"error": "Init Failed", "detail": str(ex)}
 
-# Export app and handler for Vercel ASGI serverless runner
+@app.get("/debug-fs")
+def debug_filesystem():
+    api_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(api_dir)
+    return {
+        "cwd": os.getcwd(),
+        "api_dir": api_dir,
+        "project_root": project_root,
+        "cwd_files": os.listdir(os.getcwd()) if os.path.exists(os.getcwd()) else [],
+        "api_dir_files": os.listdir(api_dir) if os.path.exists(api_dir) else [],
+        "project_root_files": os.listdir(project_root) if os.path.exists(project_root) else [],
+        "sys_path": sys.path
+    }
+
 handler = app
 __all__ = ["app", "handler"]
