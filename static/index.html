@@ -597,16 +597,16 @@
                     <button class="preset-btn" onclick="loadPreset('senior')">👴 Senior</button>
                 </div>
 
-                <form id="predictionForm" onsubmit="handlePredict(event)">
+                <form id="predictionForm" onsubmit="handlePredict(event)" novalidate>
                     <!-- Age & Weight -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="age">Age (Years)</label>
-                            <input type="number" id="age" value="28" min="1" max="119" required oninput="updateLiveMetrics()">
+                            <input type="number" id="age" value="28" min="1" max="119" step="1" required oninput="updateLiveMetrics()">
                         </div>
                         <div class="form-group">
                             <label for="weight">Weight (kg)</label>
-                            <input type="number" id="weight" value="68.0" step="0.5" min="1" max="300" required oninput="updateLiveMetrics()">
+                            <input type="number" id="weight" value="68.0" step="any" min="1" max="300" required oninput="updateLiveMetrics()">
                         </div>
                     </div>
 
@@ -625,13 +625,13 @@
                         </div>
                         <div class="form-group" id="meterHeightContainer">
                             <label for="heightMeters">Height (meters)</label>
-                            <input type="number" id="heightMeters" value="1.75" step="0.01" min="0.5" max="2.5" required oninput="updateLiveMetrics()">
+                            <input type="number" id="heightMeters" value="1.75" step="any" min="0.5" max="2.5" required oninput="updateLiveMetrics()">
                         </div>
                         <div class="form-group" id="feetHeightContainer" style="display: none;">
                             <label>Height (Feet & Inches)</label>
                             <div style="display: flex; gap: 8px;">
-                                <input type="number" id="heightFeet" value="5" min="1" max="8" style="width: 50%;" oninput="updateFeetToMeters()">
-                                <input type="number" id="heightInches" value="9" min="0" max="11" style="width: 50%;" oninput="updateFeetToMeters()">
+                                <input type="number" id="heightFeet" value="5" min="1" max="8" step="1" style="width: 50%;" oninput="updateFeetToMeters()">
+                                <input type="number" id="heightInches" value="9" min="0" max="11" step="1" style="width: 50%;" oninput="updateFeetToMeters()">
                             </div>
                         </div>
                     </div>
@@ -640,7 +640,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="income">Annual Income (₹ LPA)</label>
-                            <input type="number" id="income" value="14.0" step="0.5" min="0.1" max="1000" required>
+                            <input type="number" id="income" value="14.0" step="any" min="0.1" max="10000" required>
                         </div>
                         <div class="form-group">
                             <label for="smoker">Tobacco / Smoking Habit</label>
