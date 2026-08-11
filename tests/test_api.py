@@ -7,6 +7,11 @@ client = TestClient(app)
 def test_home_endpoint():
     response = client.get("/")
     assert response.status_code == 200
+    assert "Insure AI" in response.text
+
+def test_json_info_endpoint():
+    response = client.get("/json")
+    assert response.status_code == 200
     data = response.json()
     assert data["status"] == "active"
     assert "version" in data

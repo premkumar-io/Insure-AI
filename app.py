@@ -96,10 +96,20 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-@app.get('/')
+from fastapi.responses import JSONResponse, HTMLResponse
+
+@app.get('/', response_class=HTMLResponse)
 def home():
+    index_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read(), status_code=200)
+    return HTMLResponse(content="<h1>Insure AI Platform</h1>", status_code=200)
+
+@app.get('/json')
+def api_info():
     return {
-        'message': 'InsureAI Risk Analytics API',
+        'message': 'Insure AI Risk Analytics API',
         'status': 'active',
         'version': APP_VERSION,
         'docs_url': '/docs'
