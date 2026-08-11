@@ -1,21 +1,49 @@
 import os
 import pickle
 import pandas as pd
+import logging
 
-# Import the ML model
+logger = logging.getLogger("insure_ai.predict")
+
+# Robust candidate path resolution for local dev & Vercel serverless environments
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(MODEL_DIR, 'model.pkl')
+PROJECT_ROOT = os.path.dirname(MODEL_DIR)
 
-with open(MODEL_PATH, 'rb') as f:
-    model = pickle.load(f)
+candidate_paths = [
+    os.path.join(MODEL_DIR, "model.pkl"),
+    os.path.join(PROJECT_ROOT, "model", "model.pkl"),
+    os.path.join(os.getcwd(), "model", "model.pkl"),
+    os.path.join(os.getcwd(), "model.pkl"),
+    "/var/task/model/model.pkl",
+    "/var/task/model.pkl"
+]
 
-# MLflow model version
-MODEL_VERSION = '1.0.0'
+MODEL_PATH = None
+for p in candidate_paths:
+    if os.path.exists(p):
+        MODEL_PATH = p
+        break
 
-# Get class labels from model
-class_labels = model.classes_.tolist()  # Fixed from `model_classes_`
+model = None
+MODEL_VERSION = "1.0.0"
+class_labels = ["Low", "Medium", "High"]
+
+if MODEL_PATH:
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        if hasattr(model, "classes_"):
+            class_labels = model.classes_.tolist()
+        logger.info(f"Loaded Random Forest model from {MODEL_PATH}")
+    except Exception as ex:
+        logger.error(f"Failed to load pickle model from {MODEL_PATH}: {ex}")
+else:
+    logger.error("model.pkl not found in any candidate path!")
 
 def predict_output(user_input: dict):
+    if model is None:
+        raise RuntimeError("ML Model is not loaded into memory.")
+
     df = pd.DataFrame([user_input])
 
     # Predict the class
