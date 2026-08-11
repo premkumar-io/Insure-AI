@@ -965,14 +965,20 @@
                 });
 
                 if (!response.ok) {
-                    const err = await response.json();
-                    let errMsg = "Please check the highlighted input parameters.";
-                    if (err.error) {
-                        if (err.error.details && err.error.details.length > 0) {
-                            errMsg = err.error.details.map(d => `• <strong>${d.field}</strong>: ${d.message}`).join('<br>');
-                        } else if (err.error.message) {
-                            errMsg = err.error.message;
+                    let errMsg = "An error occurred while evaluating risk profile.";
+                    try {
+                        const err = await response.json();
+                        if (err.error) {
+                            if (err.error.details && err.error.details.length > 0) {
+                                errMsg = err.error.details.map(d => `• <strong>${d.field}</strong>: ${d.message}`).join('<br>');
+                            } else if (err.error.message) {
+                                errMsg = err.error.message;
+                            }
+                        } else if (err.detail) {
+                            errMsg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
                         }
+                    } catch (e) {
+                        errMsg = `Server error (${response.status} ${response.statusText})`;
                     }
                     showErrorBanner(errMsg);
                     return;

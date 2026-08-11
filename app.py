@@ -49,10 +49,13 @@ async def vercel_scope_fix(request: Request, call_next):
     path = request.scope.get("path", "")
     forwarded = request.headers.get("x-vercel-forwarded-path") or request.headers.get("x-forwarded-uri")
     
-    if forwarded and forwarded.startswith("/"):
+    if forwarded and forwarded.startswith("/") and not forwarded.startswith("/api/index"):
         request.scope["path"] = forwarded.split("?")[0]
     elif path in ["", "/api/index.py", "/api/index"]:
-        request.scope["path"] = "/"
+        if request.method.upper() == "POST":
+            request.scope["path"] = "/predict"
+        else:
+            request.scope["path"] = "/"
 
     return await call_next(request)
 
