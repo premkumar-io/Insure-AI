@@ -86,6 +86,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 from fastapi.responses import JSONResponse, HTMLResponse
 
 @app.get('/', response_class=HTMLResponse)
+@app.get('/api/index.py', response_class=HTMLResponse)
+@app.get('/api/index', response_class=HTMLResponse)
 def home():
     index_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "index.html")
     if os.path.exists(index_path):
@@ -115,6 +117,8 @@ def health_check():
     }
 
 @app.post('/predict', response_model=PredictionResponse)
+@app.post('/api/index.py', response_model=PredictionResponse)
+@app.post('/api/index', response_model=PredictionResponse)
 def predict_premium(data: UserInput):
     try:
         user_input = {
