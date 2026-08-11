@@ -355,6 +355,25 @@
             border-color: var(--accent-blue);
         }
 
+        .error-banner {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1.5px solid #ef4444;
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #f87171;
+            font-size: 0.88rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        [data-theme="light"] .error-banner {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
         .radio-group {
             display: flex;
             gap: 14px;
@@ -675,6 +694,7 @@
             <!-- Right Results Column -->
             <section class="card" id="outputCard">
                 <div class="card-title">📊 Prediction Analytics & Risk Distribution</div>
+                <div class="error-banner" id="errorBanner"></div>
 
                 <!-- Initial Preview State -->
                 <div class="preview-panel" id="initialPreview">
@@ -877,22 +897,65 @@
             updateLiveMetrics();
         }
 
+        function showErrorBanner(msg) {
+            const b = document.getElementById('errorBanner');
+            b.innerHTML = `⚠️ <strong>Prediction Error:</strong><br>${msg}`;
+            b.style.display = 'block';
+        }
+
+        function hideErrorBanner() {
+            const b = document.getElementById('errorBanner');
+            b.style.display = 'none';
+            b.innerHTML = '';
+        }
+
         async function handlePredict(event) {
             event.preventDefault();
+
+            // Sanitize inputs to guarantee clean non-NaN values
+            let age = parseInt(document.getElementById('age').value);
+            if (isNaN(age) || age < 1) age = 28;
+            if (age >= 120) age = 119;
+
+            let weight = parseFloat(document.getElementById('weight').value);
+            if (isNaN(weight) || weight <= 0) weight = 68.0;
+
+            const unitChecked = document.querySelector('input[name="heightUnit"]:checked');
+            let heightUnit = unitChecked ? unitChecked.value : 'meters';
+            let height = 1.75;
+
+            if (heightUnit === 'feet') {
+                const ft = parseFloat(document.getElementById('heightFeet').value) || 5;
+                const inch = parseFloat(document.getElementById('heightInches').value) || 9;
+                height = parseFloat((((ft * 12) + inch) * 0.0254).toFixed(2));
+            } else {
+                height = parseFloat(document.getElementById('heightMeters').value);
+            }
+            if (isNaN(height) || height < 0.5 || height > 2.5) height = 1.75;
+
+            let income = parseFloat(document.getElementById('income').value);
+            if (isNaN(income) || income <= 0) income = 14.0;
+
+            let city = document.getElementById('city').value.trim();
+            if (!city) city = "Bangalore";
+
+            let smoker = document.getElementById('smoker').value === 'true';
+            let occupation = document.getElementById('occupation').value;
             
             const payload = {
-                age: parseInt(document.getElementById('age').value),
-                weight: parseFloat(document.getElementById('weight').value),
-                height: parseFloat(document.getElementById('heightMeters').value),
-                income_lpa: parseFloat(document.getElementById('income').value),
-                smoker: document.getElementById('smoker').value === 'true',
-                city: document.getElementById('city').value.trim(),
-                occupation: document.getElementById('occupation').value
+                age: age,
+                weight: weight,
+                height: height,
+                income_lpa: income,
+                smoker: smoker,
+                city: city,
+                occupation: occupation
             };
 
             const submitBtn = document.querySelector('.submit-btn');
             submitBtn.disabled = true;
             submitBtn.innerText = "⏳ Evaluating Risk Profile...";
+            hideErrorBanner();
 
             try {
                 const response = await fetch('/predict', {
@@ -903,14 +966,22 @@
 
                 if (!response.ok) {
                     const err = await response.json();
-                    alert(`Prediction Error: ${err.error ? err.error.message : 'Invalid parameters'}`);
+                    let errMsg = "Please check the highlighted input parameters.";
+                    if (err.error) {
+                        if (err.error.details && err.error.details.length > 0) {
+                            errMsg = err.error.details.map(d => `• <strong>${d.field}</strong>: ${d.message}`).join('<br>');
+                        } else if (err.error.message) {
+                            errMsg = err.error.message;
+                        }
+                    }
+                    showErrorBanner(errMsg);
                     return;
                 }
 
                 const data = await response.json();
                 renderResults(data);
             } catch (ex) {
-                alert(`Network error connecting to API endpoint: ${ex.message}`);
+                showErrorBanner(`Network error connecting to API endpoint: ${ex.message}`);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "🚀 Predict Insurance Risk";
