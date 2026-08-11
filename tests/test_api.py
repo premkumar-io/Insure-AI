@@ -54,3 +54,11 @@ def test_predict_validation_error():
     assert data["success"] is False
     assert data["error"]["code"] == "VALIDATION_ERROR"
     assert "details" in data["error"]
+
+def test_vercel_serverless_entrypoint():
+    from api.index import app as vercel_app
+    vercel_client = TestClient(vercel_app)
+    res = vercel_client.get("/health")
+    assert res.status_code == 200
+    assert res.json()["status"] == "OK"
+
