@@ -12,9 +12,12 @@ PROJECT_ROOT = os.path.dirname(MODEL_DIR)
 candidate_paths = [
     os.path.join(MODEL_DIR, "model.pkl"),
     os.path.join(PROJECT_ROOT, "model", "model.pkl"),
+    os.path.join(PROJECT_ROOT, "api", "model.pkl"),
     os.path.join(os.getcwd(), "model", "model.pkl"),
+    os.path.join(os.getcwd(), "api", "model.pkl"),
     os.path.join(os.getcwd(), "model.pkl"),
     "/var/task/model/model.pkl",
+    "/var/task/api/model.pkl",
     "/var/task/model.pkl"
 ]
 
