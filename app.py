@@ -43,6 +43,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Vercel Serverless Path Rewriter Middleware
+@app.middleware("http")
+async def vercel_scope_fix(request: Request, call_next):
+    path = request.scope.get("path", "")
+    forwarded = request.headers.get("x-vercel-forwarded-path") or request.headers.get("x-forwarded-uri")
+    
+    if forwarded and forwarded.startswith("/"):
+        request.scope["path"] = forwarded.split("?")[0]
+    elif path in ["", "/api/index.py", "/api/index"]:
+        request.scope["path"] = "/"
+
+    return await call_next(request)
+
 # Custom Validation Error Handler
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
