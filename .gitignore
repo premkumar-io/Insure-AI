@@ -1,0 +1,27 @@
+# Python Virtual Environments
+myvenv/
+myenv/
+venv/
+ENV/
+env/
+
+# Python Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Vercel Build Artifacts
+.vercel/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE & OS & Tool Caches
+.DS_Store
+.vscode/
+.idea/
+.agents/
+.claude/

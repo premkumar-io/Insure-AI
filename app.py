@@ -1,27 +1,106 @@
-from fastapi import FastAPI
+import os
+import logging
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from schema.user_input import UserInput
-from schema.prediction_response import PredictionResponse
-from model.predict import predict_output, model, MODEL_VERSION
+from schema.prediction_response import PredictionResponse, ErrorResponse
+from model.predict import predict_output, model
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("insure_ai")
 
-app = FastAPI()
+APP_VERSION = "2.0.0"
 
-# Human readable
+app = FastAPI(
+    title="Insure AI Risk Prediction API",
+    description="Production-grade AI/ML API to assess and predict insurance premium risk categories based on demographic & physical indicators.",
+    version=APP_VERSION
+)
+
+# Environment-based CORS configuration
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env and allowed_origins_env != "*":
+    origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+elif os.getenv("ENVIRONMENT") == "production":
+    origins = [os.getenv("FRONTEND_ORIGIN", "http://localhost:8501")]
+else:
+    origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Custom Validation Error Handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"Validation error on {request.url.path}: {exc}")
+    error_details = []
+    for err in exc.errors():
+        field = " -> ".join([str(x) for x in err.get("loc", []) if x != "body"])
+        error_details.append({
+            "field": field or "payload",
+            "message": err.get("msg", "Invalid value"),
+            "type": err.get("type", "validation_error")
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Please check the highlighted input fields.",
+                "details": error_details
+            }
+        }
+    )
+
+# Custom General Exception Handler
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Internal server error processing {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected error occurred while generating prediction. Please try again later."
+            }
+        }
+    )
+
 @app.get('/')
 def home():
-    return {'message': 'Insurance Premium Prediction API'}
-
-# Machine readable
-@app.get('/health')
-def health_check():
     return {
-        'status': 'OK',
-        'version': MODEL_VERSION,
-        'model_loaded': model is not None
+        'message': 'InsureAI Risk Analytics API',
+        'status': 'active',
+        'version': APP_VERSION,
+        'docs_url': '/docs'
     }
 
-# Main prediction route
+@app.get('/health')
+def health_check():
+    is_loaded = (model is not None)
+    return {
+        'status': 'OK' if is_loaded else 'DEGRADED',
+        'version': APP_VERSION,
+        'model_loaded': is_loaded
+    }
+
 @app.post('/predict', response_model=PredictionResponse)
 def predict_premium(data: UserInput):
     try:
@@ -34,8 +113,10 @@ def predict_premium(data: UserInput):
             'occupation': data.occupation
         }
 
+        logger.info(f"Predicting premium category for city_tier={data.city_tier}, age_group={data.age_group}")
         prediction = predict_output(user_input)
-        return JSONResponse(status_code=200, content={'response': prediction})
+        return prediction
     
     except Exception as e:
-        return JSONResponse(status_code=500, content={'error': str(e)})
+        logger.error(f"Prediction execution failed: {e}", exc_info=True)
+        raise e
