@@ -1,5 +1,6 @@
 import os
 import pickle
+import traceback
 import pandas as pd
 import logging
 
@@ -19,45 +20,58 @@ candidate_paths = [
     os.path.join(os.getcwd(), "model.pkl"),
     "/var/task/model/model.pkl",
     "/var/task/api/model.pkl",
-    "/var/task/model.pkl"
+    "/var/task/model.pkl",
+    "/var/task/user/model/model.pkl"
 ]
 
+_model_cache = None
 MODEL_PATH = None
-for p in candidate_paths:
-    if os.path.exists(p):
-        MODEL_PATH = p
-        break
-
-model = None
+model_load_error = None
 MODEL_VERSION = "1.0.0"
 class_labels = ["Low", "Medium", "High"]
-model_load_error = None
 
-if MODEL_PATH:
-    try:
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-        if hasattr(model, "classes_"):
-            class_labels = model.classes_.tolist()
-        logger.info(f"Loaded Random Forest model from {MODEL_PATH}")
-    except Exception as ex:
-        model_load_error = f"Unpickle error from {MODEL_PATH}: {type(ex).__name__}: {str(ex)}"
+def get_model():
+    global _model_cache, MODEL_PATH, model_load_error, class_labels
+    if _model_cache is not None:
+        return _model_cache
+
+    for p in candidate_paths:
+        if os.path.exists(p):
+            MODEL_PATH = p
+            break
+
+    if MODEL_PATH:
+        try:
+            with open(MODEL_PATH, "rb") as f:
+                _model_cache = pickle.load(f)
+            if hasattr(_model_cache, "classes_"):
+                class_labels = _model_cache.classes_.tolist()
+            logger.info(f"Successfully loaded Random Forest model from {MODEL_PATH}")
+            return _model_cache
+        except Exception as ex:
+            model_load_error = f"Unpickle error from {MODEL_PATH}: {type(ex).__name__}: {str(ex)}\n{traceback.format_exc()}"
+            logger.error(model_load_error)
+            return None
+    else:
+        model_load_error = f"model.pkl not found. Candidates checked: {candidate_paths}"
         logger.error(model_load_error)
-else:
-    model_load_error = f"model.pkl not found in candidates: {candidate_paths}"
-    logger.error(model_load_error)
+        return None
+
+# Initial attempt
+model = get_model()
 
 def predict_output(user_input: dict):
-    if model is None:
+    m = get_model()
+    if m is None:
         raise RuntimeError(f"ML Model is not loaded into memory. Detail: {model_load_error}")
 
     df = pd.DataFrame([user_input])
 
     # Predict the class
-    predicted_class = str(model.predict(df)[0])
+    predicted_class = str(m.predict(df)[0])
 
     # Get probabilities for all classes
-    probabilities = model.predict_proba(df)[0]
+    probabilities = m.predict_proba(df)[0]
     confidence = float(max(probabilities))
 
     # Create mapping: {class_name: probability}

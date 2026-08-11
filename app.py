@@ -107,12 +107,13 @@ def home():
 
 @app.get("/health")
 def health_check():
-    from model.predict import model, MODEL_PATH, model_load_error
+    import model.predict as mp
+    current_model = mp.get_model()
     return {
-        "status": "OK" if model is not None else "DEGRADED",
-        "model_loaded": model is not None,
-        "model_path": MODEL_PATH,
-        "model_error": model_load_error,
+        "status": "OK" if current_model is not None else "DEGRADED",
+        "model_loaded": current_model is not None,
+        "model_path": mp.MODEL_PATH,
+        "model_error": mp.model_load_error,
         "version": APP_VERSION
     }
 
