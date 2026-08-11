@@ -46,9 +46,11 @@ app.add_middleware(
 # Vercel Serverless Path Rewriter Middleware
 @app.middleware("http")
 async def fix_vercel_path(request: Request, call_next):
-    forwarded_path = request.headers.get("x-matched-path") or request.headers.get("x-vercel-forwarded-path")
-    if forwarded_path and forwarded_path.startswith("/"):
-        request.scope["path"] = forwarded_path
+    forwarded_uri = request.headers.get("x-forwarded-uri") or request.headers.get("x-real-url")
+    if forwarded_uri:
+        clean_path = forwarded_uri.split("?")[0]
+        if clean_path.startswith("/"):
+            request.scope["path"] = clean_path
     else:
         raw_path = request.scope.get("path", "")
         for prefix in ["/api/index.py", "/api/index"]:
