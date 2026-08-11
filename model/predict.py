@@ -1,4 +1,5 @@
 import os
+import sys
 import pickle
 import traceback
 import pandas as pd
@@ -6,13 +7,19 @@ import logging
 
 logger = logging.getLogger("insure_ai.predict")
 
-# Backward compatibility patch for pickled pipelines from older scikit-learn versions (1.2/1.3 -> 1.5/1.6)
+# Backward compatibility patch for pickled pipelines from older scikit-learn versions
 try:
     import sklearn.compose._column_transformer
-    if not hasattr(sklearn.compose._column_transformer, '_RemainderColsList'):
-        class _RemainderColsList(list):
-            pass
-        sklearn.compose._column_transformer._RemainderColsList = _RemainderColsList
+    class _RemainderColsList(list):
+        def __init__(self, *args, **kwargs):
+            if args:
+                super().__init__(args[0])
+            else:
+                super().__init__()
+
+    setattr(sklearn.compose._column_transformer, "_RemainderColsList", _RemainderColsList)
+    if "sklearn.compose._column_transformer" in sys.modules:
+        sys.modules["sklearn.compose._column_transformer"]._RemainderColsList = _RemainderColsList
 except Exception as patch_ex:
     logger.warning(f"Could not apply _RemainderColsList patch: {patch_ex}")
 
