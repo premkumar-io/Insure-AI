@@ -105,13 +105,15 @@ def home():
         'docs_url': '/docs'
     }
 
-@app.get('/health')
+@app.get("/health")
 def health_check():
-    is_loaded = (model is not None)
+    from model.predict import model, MODEL_PATH, model_load_error
     return {
-        'status': 'OK' if is_loaded else 'DEGRADED',
-        'version': APP_VERSION,
-        'model_loaded': is_loaded
+        "status": "OK" if model is not None else "DEGRADED",
+        "model_loaded": model is not None,
+        "model_path": MODEL_PATH,
+        "model_error": model_load_error,
+        "version": APP_VERSION
     }
 
 @app.post('/predict', response_model=PredictionResponse)

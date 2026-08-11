@@ -13,6 +13,7 @@ candidate_paths = [
     os.path.join(MODEL_DIR, "model.pkl"),
     os.path.join(PROJECT_ROOT, "model", "model.pkl"),
     os.path.join(PROJECT_ROOT, "api", "model.pkl"),
+    os.path.join(PROJECT_ROOT, "model.pkl"),
     os.path.join(os.getcwd(), "model", "model.pkl"),
     os.path.join(os.getcwd(), "api", "model.pkl"),
     os.path.join(os.getcwd(), "model.pkl"),
@@ -30,6 +31,7 @@ for p in candidate_paths:
 model = None
 MODEL_VERSION = "1.0.0"
 class_labels = ["Low", "Medium", "High"]
+model_load_error = None
 
 if MODEL_PATH:
     try:
@@ -39,13 +41,15 @@ if MODEL_PATH:
             class_labels = model.classes_.tolist()
         logger.info(f"Loaded Random Forest model from {MODEL_PATH}")
     except Exception as ex:
-        logger.error(f"Failed to load pickle model from {MODEL_PATH}: {ex}")
+        model_load_error = f"Unpickle error from {MODEL_PATH}: {type(ex).__name__}: {str(ex)}"
+        logger.error(model_load_error)
 else:
-    logger.error("model.pkl not found in any candidate path!")
+    model_load_error = f"model.pkl not found in candidates: {candidate_paths}"
+    logger.error(model_load_error)
 
 def predict_output(user_input: dict):
     if model is None:
-        raise RuntimeError("ML Model is not loaded into memory.")
+        raise RuntimeError(f"ML Model is not loaded into memory. Detail: {model_load_error}")
 
     df = pd.DataFrame([user_input])
 
