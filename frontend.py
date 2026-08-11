@@ -259,6 +259,24 @@ common_css_header = """
         gap: 8px;
     }
 
+    /* Custom Sleek Dropdown Select Box Styling */
+    div[data-baseweb="select"] > div {
+        border-radius: 12px !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.25) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+    }
+    div[data-baseweb="select"] > div:hover, div[data-baseweb="select"] > div:focus-within {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.25), 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-1px) !important;
+    }
+    div[data-baseweb="select"] span {
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        letter-spacing: -0.01em !important;
+    }
+
     .card-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
     .res-val { font-size: 2.5rem; font-weight: 800; margin: 8px 0; letter-spacing: -0.02em; }
     .res-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
