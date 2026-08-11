@@ -46,19 +46,16 @@ app.add_middleware(
 # Vercel Serverless Path Rewriter Middleware
 @app.middleware("http")
 async def fix_vercel_path(request: Request, call_next):
-    raw_path = request.scope.get("path", "")
-    forwarded_uri = request.headers.get("x-forwarded-uri") or request.headers.get("x-real-url") or raw_path
-    clean_path = forwarded_uri.split("?")[0]
-    
-    for prefix in ["/api/index.py", "/api/index"]:
-        if clean_path.startswith(prefix):
-            clean_path = clean_path[len(prefix):]
-            break
-
-    if not clean_path:
-        clean_path = "/"
-        
-    request.scope["path"] = clean_path
+    vercel_path = request.headers.get("x-vercel-forwarded-path") or request.headers.get("x-forwarded-uri")
+    if vercel_path and vercel_path.startswith("/"):
+        request.scope["path"] = vercel_path.split("?")[0]
+    else:
+        raw_path = request.scope.get("path", "")
+        for prefix in ["/api/index.py", "/api/index"]:
+            if raw_path.startswith(prefix):
+                new_path = raw_path[len(prefix):]
+                request.scope["path"] = new_path if new_path else "/"
+                break
     return await call_next(request)
 
 # Custom Validation Error Handler
