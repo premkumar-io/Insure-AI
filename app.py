@@ -47,7 +47,7 @@ app.add_middleware(
 @app.middleware("http")
 async def fix_vercel_path(request: Request, call_next):
     vercel_path = request.headers.get("x-vercel-forwarded-path") or request.headers.get("x-forwarded-uri")
-    if vercel_path and vercel_path.startswith("/"):
+    if vercel_path and vercel_path.startswith("/") and not vercel_path.startswith("/api/index"):
         request.scope["path"] = vercel_path.split("?")[0]
     else:
         raw_path = request.scope.get("path", "")
@@ -57,6 +57,13 @@ async def fix_vercel_path(request: Request, call_next):
                 request.scope["path"] = new_path if new_path else "/"
                 break
     return await call_next(request)
+
+@app.api_route("/debug-headers", methods=["GET", "POST"])
+def debug_headers(request: Request):
+    return {
+        "headers": dict(request.headers),
+        "scope_path": request.scope.get("path")
+    }
 
 # Custom Validation Error Handler
 @app.exception_handler(RequestValidationError)
