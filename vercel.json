@@ -1,13 +1,9 @@
 {
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "model/**"
-    }
-  },
-  "rewrites": [
+  "version": 2,
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
+      "src": "/(.*)",
+      "dest": "api/index.py"
     }
   ]
 }
