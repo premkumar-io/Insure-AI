@@ -367,7 +367,7 @@ Insure AI
 ENTERPRISE v2.0
 </span>
 </div>
-<div class="brand-sub">AI-Powered Insurance Premium Risk Analytics & Underwriting Platform</div>
+<div class="brand-sub">AI Insurance Risk Platform</div>
 </div>
 </div>
 <div class="nav-links">
