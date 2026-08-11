@@ -6,6 +6,16 @@ import logging
 
 logger = logging.getLogger("insure_ai.predict")
 
+# Backward compatibility patch for pickled pipelines from older scikit-learn versions (1.2/1.3 -> 1.5/1.6)
+try:
+    import sklearn.compose._column_transformer
+    if not hasattr(sklearn.compose._column_transformer, '_RemainderColsList'):
+        class _RemainderColsList(list):
+            pass
+        sklearn.compose._column_transformer._RemainderColsList = _RemainderColsList
+except Exception as patch_ex:
+    logger.warning(f"Could not apply _RemainderColsList patch: {patch_ex}")
+
 # Robust candidate path resolution for local dev & Vercel serverless environments
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(MODEL_DIR)
